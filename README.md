@@ -18,8 +18,9 @@ token = "YOURTOKENHERE"
 
 -- Let's create a message in the random chat room
 
-example = Slack.request token "chat.postMessage" [("channel", "#random"), ("text", "Hi from Haskell")]
+example = Slack.request token "chat.postMessage" params
+    where params = [("channel", "#random"), ("text", "Hi from Haskell")]
 
- -- Success "{\"ok\":true,\"channel\":\"C03U2KA6Q\",\"ts\":\"1425844230.000002\",\"message\":{\"text\":\"Hi from Haskell\",\"username\":\"bot\",\"type\":\"message\",\"subtype\":\"bot_message\",\"ts\":\"1425844230.000002\"}}"
+ -- Success "{\"ok\":true,\"channel\":\"C03U2KA6Q\" ... "
 
 ```
