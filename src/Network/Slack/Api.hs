@@ -1,5 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Network.Slack.Api where
+module Network.Slack.Api
+    ( SlackResponse(..)
+    , makeRequest
+    , endpoints
+    , request
+     ) where
 
 import           Control.Applicative     ((<$>))
 import qualified Data.ByteString.Char8   as B
@@ -44,17 +49,20 @@ endpoints = M.fromList
     ]
 
 data SlackResponse = Success L.ByteString | InvalidEndpoint
-  deriving ( Show, Eq )
+    deriving ( Show, Eq )
 
 -- Run a request and return the body
 --
 runRequest :: Token -> String -> [(String, String)] -> IO L.ByteString
-runRequest token endpoint params = postWithBody (makeRequest endpoint) token (packParams params)
+runRequest token endpoint params =
+    postWithBody fullRequestPath token normalizedParams
+    where fullRequestPath = makeRequest endpoint
+          normalizedParams = packParams params
 
 -- Perform a HTTP request to Slack and get a response
 --
-slackRequest :: Token -> String -> [(String, String)] -> IO SlackResponse
-slackRequest token endpoint params =
+request :: Token -> String -> [(String, String)] -> IO SlackResponse
+request token endpoint params =
   case M.lookup endpoint endpoints of
     Just _ -> do
       response <- runRequest token endpoint params
