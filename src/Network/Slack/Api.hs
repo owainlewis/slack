@@ -7,9 +7,11 @@ module Network.Slack.Api
      ) where
 
 import           Control.Applicative     ((<$>))
+import           Control.Monad           (liftM, liftM2)
 import qualified Data.ByteString.Char8   as B
 import qualified Data.ByteString.Lazy    as L
 import qualified Data.Map                as M
+import           Data.Maybe              (fromMaybe)
 import           Data.Monoid             (mconcat, (<>))
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
@@ -63,6 +65,18 @@ endpoints = M.fromList
     , ("chat.delete",          "Deletes a message")
     , ("chat.postMessage",     "Sends a message to a channel")
     , ("chat.update",          "Updates a message")
+-- Emoji
+    , ("emoji.list",           "Lists custom emoji for a team")
+-- Files
+    , ("files.delete", "Seletes a file")
+    , ("files.info", "Gets information about a team file")
+    , ("files.list", "Lists & filters team files")
+    , ("files.upload", "UPloads or creates a file")
+-- Groups
+    , ("groups.archive", "Archives a private group")
+    , ("groups.close", "Closes a private group")
+    , ("groups.create", "Creates a private group")
+    , ("groups.createChild", "Clones and archives a private group")
     ]
 
 data SlackResponse = Success L.ByteString | InvalidEndpoint
@@ -85,3 +99,14 @@ request token endpoint params =
       response <- runRequest token endpoint params
       return . Success $ response
     Nothing -> return InvalidEndpoint
+
+-- TODO helper function
+mapKV :: (Ord k, Monad m) => (t -> m k) -> (t1 -> m a) -> M.Map t t1 -> m (M.Map k a)
+mapKV kf vf = liftM M.fromList . mapM fs . M.assocs
+    where
+    fs (k, v) = liftM2 (,) (kf k) (vf v)
+
+-- Get information about a specific endpoint
+info :: String -> String
+info endpoint = fromMaybe "Invalid enpoint" lookup
+    where lookup = M.lookup endpoint endpoints
