@@ -12,7 +12,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-    exposed-modules:     Main
+    exposed-modules:     Main, Network.Slack.Api
     build-depends:       base >=4.6,
                          http-client,
                          http-client-tls,

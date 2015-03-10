@@ -1,9 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
+
+-----------------------------------------------------------------------------
+--
+-- SLACK
+--
+-- Owain Lewis owain@owainlewis.com
+-- A Haskell Client for the Slack Web HTTP API
+--
+-----------------------------------------------------------------------------
+
 module Network.Slack.Api
     ( SlackResponse(..)
     , makeRequest
     , endpoints
     , request
+    , info
      ) where
 
 import           Control.Applicative     ((<$>))
@@ -101,13 +112,65 @@ groupEndpoints = M.fromList
     , ("groups.unarchive",   "Unarchives a private group")
     ]
 
+imEndpoints :: M.Map String String
+imEndpoints = M.fromList
+    [ ("im.close",   "Close a direct message channel")
+    , ("im.history", "Fetches history of messages and events from a direct message channel")
+    , ("im.list",    "Lists direct message channels for the calling user")
+    , ("im.mark",    "Sets the read cursor in a direct mesasge channel")
+    , ("im.open",    "Opens a direct message channel")
+    ]
+
+oauthEndpoints :: M.Map String String
+oauthEndpoints = M.fromList
+    [ ("oauth.access", "Exchanges a temporary OAuth code for an API token")
+    ]
+
+rtmEndpoints :: M.Map String String
+rtmEndpoints = M.fromList
+    [ ("rtm.start", "Starts a Real Time Messaging session")
+    ]
+
+searchEndpoints :: M.Map String String
+searchEndpoints = M.fromList
+    [ ("search.all",      "Searches for messages and files matching a query")
+    , ("search.files",    "Searches for files matching a query")
+    , ("search.messages", "Searches for messages matching a query")
+    ]
+
+starsEndpoints :: M.Map String String
+starsEndpoints = M.fromList
+    [ ("stars.list", "List stars for a user")
+    ]
+
+teamEndpoints :: M.Map String String
+teamEndpoints = M.fromList
+    [ ("team.accessLogs", "Get the access logs for a team")
+    ]
+
+userEndpoints :: M.Map String String
+userEndpoints = M.fromList
+    [ ("user.getPresence",  "Gets user presence information")
+    , ("user.info",         "Gets information about a user")
+    , ("user.list",         "Lists all users in a Slack team")
+    , ("user.setActive",    "Marks a user as active")
+    , ("users.setPresence", "Manually sets user presence")
+    ]
+
 endpoints :: M.Map String String
-endpoints = mconcat allEndpoints
+endpoints = M.unionsWith (<>) allEndpoints
     where allEndpoints = [ authEndpoints
                          , channelEndpoints
                          , emojiEndpoints
                          , fileEndpoints
                          , groupEndpoints
+                         , imEndpoints
+                         , oauthEndpoints
+                         , rtmEndpoints
+                         , searchEndpoints
+                         , starsEndpoints
+                         , teamEndpoints
+                         , userEndpoints
                          ]
 
 data SlackResponse = Success L.ByteString | InvalidEndpoint

@@ -2,6 +2,14 @@
 
 Haskell client for the Slack web api
 
+## Development
+
+```
+cabal sandbox init
+cabal install --enable-tests
+cabal test
+```
+
 # Use
 
 All the web api methods are available but you may need to reference the slack docks for parameters.
