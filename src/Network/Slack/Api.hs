@@ -23,12 +23,12 @@ import qualified Data.ByteString.Char8   as B
 import qualified Data.ByteString.Lazy    as L
 import qualified Data.Map                as M
 import           Data.Maybe              (fromMaybe)
-import           Data.Monoid             (mconcat, (<>))
+import qualified Data.Monoid             as Monoid
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 
 makeRequest :: String -> String
-makeRequest resource = mconcat [base, "/", resource]
+makeRequest resource = Monoid.mconcat [base, "/", resource]
     where base = "https://slack.com/api"
 
 type Endpoint = String
@@ -158,7 +158,7 @@ userEndpoints = M.fromList
     ]
 
 endpoints :: M.Map String String
-endpoints = M.unionsWith (<>) allEndpoints
+endpoints = M.unionsWith (Monoid.<>) allEndpoints
     where allEndpoints = [ authEndpoints
                          , channelEndpoints
                          , emojiEndpoints
