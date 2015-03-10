@@ -12,14 +12,21 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Main
-  build-depends:       base >=4.7 && <4.8,
-                       http-client,
-                       http-client-tls,
-                       http-types,
-                       aeson,
-                       containers,
-                       bytestring,
-                       text
-  hs-source-dirs:      src
-  default-language:    Haskell2010
+    exposed-modules:     Main
+    build-depends:       base >=4.6,
+                         http-client,
+                         http-client-tls,
+                         http-types,
+                         aeson,
+                         containers,
+                         bytestring,
+                         text
+    hs-source-dirs:      src
+    default-language:    Haskell2010
+
+test-suite hspec
+    build-depends:    base, slack-hs, hspec
+    default-language: Haskell2010
+    hs-source-dirs:   test
+    main-is:          Spec.hs
+    type:             exitcode-stdio-1.0

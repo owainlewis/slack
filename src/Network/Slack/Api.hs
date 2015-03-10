@@ -23,6 +23,8 @@ makeRequest resource = mconcat [base, "/", resource]
 type Endpoint = String
 type Token    = String
 
+-- Simple HTTP Wrappers for POST request
+--
 postRequest :: Endpoint -> Token -> [(B.ByteString, B.ByteString)] -> IO (Response L.ByteString)
 postRequest url token bodyParams = do
     initReq <- parseUrl url
@@ -30,24 +32,25 @@ postRequest url token bodyParams = do
         request = urlEncodedBody params initReq
     withManager tlsManagerSettings $ httpLbs request
 
+-- Same as above but return response body
+--
 postWithBody :: Endpoint -> Token -> [(B.ByteString, B.ByteString)] -> IO L.ByteString
 postWithBody url token bodyParams = do
   response <- postRequest url token bodyParams
   return $ responseBody response
 
-mapTuple :: (a -> b) -> (a, a) -> (b, b)
-mapTuple f (x,y) = (f x, f y)
-
 packParams :: [(String, String)] -> [(B.ByteString, B.ByteString)]
 packParams = map (mapTuple B.pack)
+    where mapTuple f (x,y) = (f x, f y)
 
-endpoints :: M.Map String String
-endpoints = M.fromList
--- Auth
-    [ ("api.test",            "Checks API calling code")
-    , ("auth.test",           "Checks authentication & identity")
--- Channels
-    , ("channels.archive",    "Archives a channel")
+authEndpoints :: M.Map String String
+authEndpoints = M.fromList
+    [ ("api.test",  "Checks API calling code")
+    , ("auth.test", "Checks authentication & identity") ]
+
+channelEndpoints :: M.Map String String
+channelEndpoints = M.fromList
+    [ ("channels.archive",    "Archives a channel")
     , ("channels.create",     "Creates a channel")
     , ("channels.history",    "Fetches history of messages and events from a channel")
     , ("channels.info",       "Gets information about a channel")
@@ -60,24 +63,52 @@ endpoints = M.fromList
     , ("channels.rename",     "Renames a channel")
     , ("channels.setPurpose", "Sets the purpose for a channel")
     , ("channels.setTopic",   "Sets the topic for a channel")
-    , ("channels.unarchive",   "Unarchives a channel")
--- Chat
-    , ("chat.delete",          "Deletes a message")
-    , ("chat.postMessage",     "Sends a message to a channel")
-    , ("chat.update",          "Updates a message")
--- Emoji
-    , ("emoji.list",           "Lists custom emoji for a team")
--- Files
-    , ("files.delete", "Seletes a file")
-    , ("files.info", "Gets information about a team file")
-    , ("files.list", "Lists & filters team files")
-    , ("files.upload", "UPloads or creates a file")
--- Groups
-    , ("groups.archive", "Archives a private group")
-    , ("groups.close", "Closes a private group")
-    , ("groups.create", "Creates a private group")
+    , ("channels.unarchive",  "Unarchives a channel") ]
+
+chatEndpoints :: M.Map String String
+chatEndpoints = M.fromList
+    [ ("chat.delete",       "Deletes a message")
+    , ("chat.postMessage",  "Sends a message to a channel")
+    , ("chat.update",       "Updates a message") ]
+
+emojiEndpoints :: M.Map String String
+emojiEndpoints = M.fromList
+    [("emoji.list", "Lists custom emoji for a team") ]
+
+fileEndpoints :: M.Map String String
+fileEndpoints = M.fromList
+    [ ("files.delete", "Seletes a file")
+    , ("files.info",   "Gets information about a team file")
+    , ("files.list",   "Lists & filters team files")
+    , ("files.upload", "UPloads or creates a file") ]
+
+groupEndpoints :: M.Map String String
+groupEndpoints = M.fromList
+    [ ("groups.archive",     "Archives a private group")
+    , ("groups.close",       "Closes a private group")
+    , ("groups.create",      "Creates a private group")
     , ("groups.createChild", "Clones and archives a private group")
+    , ("groups.history",     "Fetches history of message and events from a private group")
+    , ("groups.invite",      "Invates a user to a private group")
+    , ("groups.kick",        "Removes a user from a private group")
+    , ("groups.leave",       "Leaves a private group")
+    , ("groups.list",        "List private groups that the user has access to")
+    , ("groups.mark",        "Sets the read cursor in a private group")
+    , ("groups.open",        "Opens a private group")
+    , ("groups.rename",      "Rename a private group")
+    , ("groups.setPurpose",  "Sets the purpose for a private group")
+    , ("groups.setTopic",    "Sets the topic for a private group")
+    , ("groups.unarchive",   "Unarchives a private group")
     ]
+
+endpoints :: M.Map String String
+endpoints = mconcat allEndpoints
+    where allEndpoints = [ authEndpoints
+                         , channelEndpoints
+                         , emojiEndpoints
+                         , fileEndpoints
+                         , groupEndpoints
+                         ]
 
 data SlackResponse = Success L.ByteString | InvalidEndpoint
     deriving ( Show, Eq )
