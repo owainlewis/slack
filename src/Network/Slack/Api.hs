@@ -47,8 +47,8 @@ postRequest url token bodyParams = do
 --
 postWithBody :: Endpoint -> Token -> [(B.ByteString, B.ByteString)] -> IO L.ByteString
 postWithBody url token bodyParams = do
-  response <- postRequest url token bodyParams
-  return $ responseBody response
+    response <- postRequest url token bodyParams
+    return $ responseBody response
 
 packParams :: [(String, String)] -> [(B.ByteString, B.ByteString)]
 packParams = map (mapTuple B.pack)
@@ -198,7 +198,7 @@ request token endpoint params =
 mapKV :: (Ord k, Monad m) => (t -> m k) -> (t1 -> m a) -> M.Map t t1 -> m (M.Map k a)
 mapKV kf vf = liftM M.fromList . mapM fs . M.assocs
     where
-    fs (k, v) = liftM2 (,) (kf k) (vf v)
+      fs (k, v) = liftM2 (,) (kf k) (vf v)
 
 -- Get information about a specific endpoint
 info :: String -> String
