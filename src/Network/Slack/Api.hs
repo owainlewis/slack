@@ -51,8 +51,7 @@ postWithBody url token bodyParams = do
     return $ responseBody response
 
 packParams :: [(String, String)] -> [(B.ByteString, B.ByteString)]
-packParams = map (mapTuple B.pack)
-    where mapTuple f (x,y) = (f x, f y)
+packParams = map (mapTuple B.pack) where mapTuple f (x,y) = (f x, f y)
 
 authEndpoints :: M.Map String String
 authEndpoints = M.fromList
