@@ -201,5 +201,4 @@ mapKV kf vf = liftM M.fromList . mapM fs . M.assocs
 
 -- Get information about a specific endpoint
 info :: String -> String
-info endpoint = fromMaybe "Invalid enpoint" lookup
-    where lookup = M.lookup endpoint endpoints
+info endpoint = fromMaybe "Invalid enpoint" $ M.lookup endpoint endpoints
