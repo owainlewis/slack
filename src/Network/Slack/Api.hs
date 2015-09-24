@@ -15,7 +15,7 @@ module Network.Slack.Api
     , endpoints
     , request
     , info
-     ) where
+    ) where
 
 import           Control.Applicative     ((<$>))
 import           Control.Monad           (liftM, liftM2)
