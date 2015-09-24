@@ -1,12 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-
 -----------------------------------------------------------------------------
---
 -- SLACK
---
 -- Owain Lewis owain@owainlewis.com
 -- A Haskell Client for the Slack Web HTTP API
---
 -----------------------------------------------------------------------------
 
 module Network.Slack.Api
