@@ -189,12 +189,10 @@ request token endpoint params =
       return . Success $ response
     Nothing -> return InvalidEndpoint
 
--- TODO helper function
 mapKV :: (Ord k, Monad m) => (t -> m k) -> (t1 -> m a) -> M.Map t t1 -> m (M.Map k a)
 mapKV kf vf = liftM M.fromList . mapM fs . M.assocs
     where
       fs (k, v) = liftM2 (,) (kf k) (vf v)
 
--- Get information about a specific endpoint
 info :: String -> String
 info endpoint = fromMaybe "Invalid enpoint" $ M.lookup endpoint endpoints
