@@ -24,6 +24,21 @@ library
     hs-source-dirs:      src
     default-language:    Haskell2010
 
+executable  slack-generic-client
+    hs-source-dirs: src
+    main-is: generic-client/Main.hs
+    build-depends:       base >=4.6,
+                         slack-hs,
+                         optparse-applicative,
+                         http-client,
+                         http-client-tls,
+                         http-types,
+                         aeson,
+                         containers,
+                         bytestring,
+                         text
+    default-language:    Haskell2010
+
 test-suite hspec
     build-depends:    base, slack-hs, hspec
     default-language: Haskell2010
