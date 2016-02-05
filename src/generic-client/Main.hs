@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 module Main where
+
 import qualified Network.Slack.Api as Slack
 import Options.Applicative 
 import Control.Applicative
