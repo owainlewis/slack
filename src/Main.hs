@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards #-}
-module Main where
+module Main
+  ( main
+  ) where
 
 import qualified Network.Slack.Api as Slack
 import Options.Applicative 
@@ -25,14 +27,14 @@ parseParams xs =
     let xs' = parseQuery $ B.pack xs
     in [(B.unpack a, B.unpack b) | (a,Just b) <- xs']
 
-opts = info (helper <*> parseOptions)
+main :: IO ()
+main = 
+  let opts = info (helper <*> parseOptions)
             (fullDesc 
              <> progDesc "Probe the Slack API"
-             <> header "slack-generic-client")
-
-main :: IO ()
-main = do
-    Options{..} <- execParser opts
-    r <- Slack.request token endpoint params
-    print r
-    putStrLn "Done"
+             <> header "slack-generic-client") in 
+    do
+        Options{..} <- execParser opts
+        r <- Slack.request token endpoint params
+        print r
+        putStrLn "Done"
