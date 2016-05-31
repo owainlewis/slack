@@ -17,6 +17,7 @@ library
                          http-client,
                          http-client-tls,
                          http-types,
+                         optparse-applicative,
                          aeson,
                          containers,
                          bytestring,
