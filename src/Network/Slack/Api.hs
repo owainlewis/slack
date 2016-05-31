@@ -158,6 +158,7 @@ endpoints :: M.Map String String
 endpoints = M.unionsWith (Monoid.<>) allEndpoints
     where allEndpoints = [ authEndpoints
                          , channelEndpoints
+                         , chatEndpoints
                          , emojiEndpoints
                          , fileEndpoints
                          , groupEndpoints
