@@ -17,6 +17,7 @@ library
                          http-client,
                          http-client-tls,
                          http-types,
+                         optparse-applicative,
                          aeson,
                          containers,
                          bytestring,
@@ -26,7 +27,7 @@ library
 
 executable  slack-generic-client
     hs-source-dirs: src
-    main-is: generic-client/Main.hs
+    main-is: Main.hs
     build-depends:       base >=4.6,
                          slack-hs,
                          optparse-applicative,
