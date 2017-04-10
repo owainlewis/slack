@@ -4,6 +4,7 @@ module Main
   ) where
 
 import qualified Network.Slack.Api as Slack
+import Data.Monoid ((<>))
 import Options.Applicative 
 import Control.Applicative
 import Network.HTTP.Types.URI (parseQuery)
