@@ -18,17 +18,28 @@ For a full list of available methods and params visit https://api.slack.com/meth
 
 # Quick Start
 
-
 ```haskell
 import qualified Network.Slack.Api as Slack
 
-token = "YOURTOKENHERE"
+token :: String
+token = "XXX"
 
--- Let's create a message in the random chat room
+-- List channels
+--
+channels :: IO SlackResponse
+channels = Slack.request token "channels.list" []
 
-example = Slack.request token "chat.postMessage" params
+-- Create a message in the random chat room
+--
+createExample :: IO SlackResponse
+createExample = Slack.request token "chat.postMessage" params
     where params = [("channel", "#random"), ("text", "Hi from Haskell")]
 
- -- Success "{\"ok\":true,\"channel\":\"C03U2KA6Q\" ... "
+```
 
+Get information about a request endpoint
+
+```haskell
+λ> info "channels.list"
+"Lists all channels in a Slack team"
 ```

@@ -10,7 +10,6 @@
 -----------------------------------------------------------------------------
 module Network.Slack.Api
   ( SlackResponse(..)
-  , makeRequest
   , endpoints
   , request
   , info
@@ -18,61 +17,29 @@ module Network.Slack.Api
 
 import Control.Applicative ((<$>))
 import Control.Monad (liftM, liftM2)
-import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
-import qualified Data.Monoid as Monoid
-import Network.HTTP.Client
-import Network.HTTP.Client.TLS
+import Data.Semigroup((<>))
 
-makeRequest :: String -> String
-makeRequest resource = concat [base, "/", resource]
-  where
-    base = "https://slack.com/api"
+import qualified Network.Slack.Request as Req
+import Network.Slack.Request(Endpoint, Token)
 
-type Endpoint = String
-
-type Description = String
-
-type Token = String
-
--- Simple HTTP Wrappers for POST request
---
-postRequest
-  :: Endpoint
-  -> Token
-  -> [(B.ByteString, B.ByteString)]
-  -> IO (Response L.ByteString)
-postRequest url token bodyParams = do
-  initReq <- parseUrl url
-  let params = [("token", B.pack token)] ++ bodyParams
-      request = urlEncodedBody params initReq
-  withManager tlsManagerSettings $ httpLbs request
-
--- Same as above but return response body
---
-postWithBody :: Endpoint
-             -> Token
-             -> [(B.ByteString, B.ByteString)]
-             -> IO L.ByteString
-postWithBody url token bodyParams = do
-  response <- postRequest url token bodyParams
-  return $ responseBody response
-
-packParams :: [(String, String)] -> [(B.ByteString, B.ByteString)]
-packParams = map (mapTuple B.pack)
+packParams :: [(String, String)] -> [(BS.ByteString, BS.ByteString)]
+packParams = map (mapTuple C8.pack)
   where
     mapTuple f (x, y) = (f x, f y)
 
-authEndpoints :: M.Map Endpoint Description
+authEndpoints :: M.Map Endpoint String
 authEndpoints =
   M.fromList
     [ ("api.test", "Checks API calling code")
     , ("auth.test", "Checks authentication & identity")
     ]
 
-channelEndpoints :: M.Map Endpoint Description
+channelEndpoints :: M.Map Endpoint String
 channelEndpoints =
   M.fromList
     [ ("channels.archive", "Archives a channel")
@@ -92,7 +59,7 @@ channelEndpoints =
     , ("channels.unarchive", "Unarchives a channel")
     ]
 
-chatEndpoints :: M.Map Endpoint Description
+chatEndpoints :: M.Map Endpoint String
 chatEndpoints =
   M.fromList
     [ ("chat.delete", "Deletes a message")
@@ -100,10 +67,10 @@ chatEndpoints =
     , ("chat.update", "Updates a message")
     ]
 
-emojiEndpoints :: M.Map Endpoint Description
+emojiEndpoints :: M.Map Endpoint String
 emojiEndpoints = M.fromList [("emoji.list", "Lists custom emoji for a team")]
 
-fileEndpoints :: M.Map Endpoint Description
+fileEndpoints :: M.Map Endpoint String
 fileEndpoints =
   M.fromList
     [ ("files.delete", "Seletes a file")
@@ -112,7 +79,7 @@ fileEndpoints =
     , ("files.upload", "UPloads or creates a file")
     ]
 
-groupEndpoints :: M.Map Endpoint Description
+groupEndpoints :: M.Map Endpoint String
 groupEndpoints =
   M.fromList
     [ ("groups.archive", "Archives a private group")
@@ -133,7 +100,7 @@ groupEndpoints =
     , ("groups.unarchive", "Unarchives a private group")
     ]
 
-imEndpoints :: M.Map Endpoint Description
+imEndpoints :: M.Map Endpoint String
 imEndpoints =
   M.fromList
     [ ("im.close", "Close a direct message channel")
@@ -144,16 +111,16 @@ imEndpoints =
     , ("im.open", "Opens a direct message channel")
     ]
 
-oauthEndpoints :: M.Map Endpoint Description
+oauthEndpoints :: M.Map Endpoint String
 oauthEndpoints =
   M.fromList
     [("oauth.access", "Exchanges a temporary OAuth code for an API token")]
 
-rtmEndpoints :: M.Map Endpoint Description
+rtmEndpoints :: M.Map Endpoint String
 rtmEndpoints =
   M.fromList [("rtm.start", "Starts a Real Time Messaging session")]
 
-searchEndpoints :: M.Map Endpoint Description
+searchEndpoints :: M.Map Endpoint String
 searchEndpoints =
   M.fromList
     [ ("search.all", "Searches for messages and files matching a query")
@@ -161,14 +128,14 @@ searchEndpoints =
     , ("search.messages", "Searches for messages matching a query")
     ]
 
-starsEndpoints :: M.Map Endpoint Description
+starsEndpoints :: M.Map Endpoint String
 starsEndpoints = M.fromList [("stars.list", "List stars for a user")]
 
-teamEndpoints :: M.Map Endpoint Description
+teamEndpoints :: M.Map Endpoint String
 teamEndpoints =
   M.fromList [("team.accessLogs", "Get the access logs for a team")]
 
-userEndpoints :: M.Map Endpoint Description
+userEndpoints :: M.Map Endpoint String
 userEndpoints =
   M.fromList
     [ ("user.getPresence", "Gets user presence information")
@@ -178,8 +145,8 @@ userEndpoints =
     , ("users.setPresence", "Manually sets user presence")
     ]
 
-endpoints :: M.Map Endpoint Description
-endpoints = M.unionsWith (Monoid.<>) allEndpoints
+endpoints :: M.Map Endpoint String
+endpoints = M.unionsWith (<>) allEndpoints
   where
     allEndpoints =
       [ authEndpoints
@@ -202,22 +169,15 @@ data SlackResponse
   | InvalidEndpoint
   deriving (Show, Eq)
 
--- Run a request and return the body
---
-runRequest :: Token -> String -> [(String, String)] -> IO L.ByteString
-runRequest token endpoint params =
-  postWithBody fullRequestPath token normalizedParams
-  where
-    fullRequestPath = makeRequest endpoint
-    normalizedParams = packParams params
-
 -- Perform a HTTP request to Slack and get a response
 --
-request :: Token -> String -> [(String, String)] -> IO SlackResponse
+-- > request "TOKEN" "channels.list" []
+--
+request :: Req.Token -> String -> [(String, String)] -> IO SlackResponse
 request token endpoint params =
   case M.lookup endpoint endpoints of
     Just _ -> do
-      response <- runRequest token endpoint params
+      response <- Req.dispatch endpoint (packParams params) token
       return . Success $ response
     Nothing -> return InvalidEndpoint
 
@@ -228,5 +188,9 @@ mapKV kf vf = liftM M.fromList . mapM fs . M.assocs
   where
     fs (k, v) = liftM2 (,) (kf k) (vf v)
 
+-- | Dumps out information about a Slack endpoint
+--
+-- > info "channels.list"
+--
 info :: String -> String
 info endpoint = fromMaybe "Invalid enpoint" $ M.lookup endpoint endpoints
