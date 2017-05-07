@@ -2,6 +2,8 @@
 
 Haskell client for the Slack web api
 
+[![CircleCI](https://circleci.com/gh/owainlewis/slack.svg?style=svg)](https://circleci.com/gh/owainlewis/slack)
+
 ## Roadmap
 
 * Web API
