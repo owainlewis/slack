@@ -1,0 +1,10 @@
+dependencies:
+  cache_directories:
+    - "~/.stack"
+  pre:
+    - curl -sSL https://get.haskellstack.org/ | sh
+  override:
+    - stack build --no-system-ghc --install-ghc
+test:
+  override:
+    - stack test
