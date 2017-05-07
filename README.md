@@ -2,17 +2,16 @@
 
 Haskell client for the Slack web api
 
-## Development
+## Roadmap
 
-```
-cabal sandbox init
-cabal install --enable-tests
-cabal test
-```
+* Web API
+* Websocket API
+* Stackage Release
+* CI
 
-# Use
+# API Use
 
-All the web api methods are available but you may need to reference the slack docks for parameters.
+All the web API methods are available but you may need to reference the slack docks for parameters.
 
 For a full list of available methods and params visit https://api.slack.com/methods
 
