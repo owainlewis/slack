@@ -74,8 +74,7 @@ def haskell_name(m):
 
 def main():
     for m in METHODS:
-        hn = haskell_name(m)
-        print(TEMPLATE % (hn, hn, m))
+        print(haskell_name(m))
 
 if __name__ == '__main__':
     main()

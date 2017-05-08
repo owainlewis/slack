@@ -1,10 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
------------------------------------------------------------------------------
+-- |
+-- Module      : Network.Slack.Api
 --
--- SLACK
+-- Copyright   : (c) 2017 Owain Lewis
 --
--- Owain Lewis owain@owainlewis.com
+-- License     : BSD-style
+-- Maintainer  : Owain Lewis <owain@owainlewis.com>
+-- Stability   : experimental
+-- Portability : GHC
+--
 -- A Haskell Client for the Slack Web HTTP API
 --
 -----------------------------------------------------------------------------
@@ -13,6 +18,62 @@ module Network.Slack.Api
   , endpoints
   , request
   , info
+  , apiTest
+  , authTest
+  , channelsArchive
+  , channelsCreate
+  , channelsHistory
+  , channelsInfo
+  , channelsInvite
+  , channelsJoin
+  , channelsKick
+  , channelsLeave
+  , channelsList
+  , channelsMark
+  , channelsRename
+  , channelsSetPurpose
+  , channelsSetTopic
+  , channelsUnarchive
+  , chatDelete
+  , chatPostMessage
+  , chatUpdate
+  , emojiList
+  , filesDelete
+  , filesInfo
+  , filesList
+  , filesUpload
+  , groupsArchive
+  , groupsClose
+  , groupsCreate
+  , groupsCreateChild
+  , groupsHistory
+  , groupsInvite
+  , groupsKick
+  , groupsLeave
+  , groupsList
+  , groupsMark
+  , groupsOpen
+  , groupsRename
+  , groupsSetPurpose
+  , groupsSetTopic
+  , groupsUnarchive
+  , imClose
+  , imHistory
+  , imList
+  , imMark
+  , imOpen
+  , oauthAccess
+  , rtmStart
+  , searchAll
+  , searchFiles
+  , searchMessages
+  , starsList
+  , teamAccessLogs
+  , userGetPresence
+  , userInfo
+  , userList
+  , userSetActive
+  , usersSetPresence
   ) where
 
 import Control.Applicative ((<$>))
@@ -22,10 +83,10 @@ import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
-import Data.Semigroup((<>))
+import Data.Semigroup ((<>))
 
 import qualified Network.Slack.Request as Req
-import Network.Slack.Request(Endpoint, Token)
+import Network.Slack.Request (Endpoint, Token)
 
 type RequestParams = [(String, String)]
 
@@ -198,7 +259,6 @@ info :: String -> String
 info endpoint = fromMaybe "Invalid enpoint" $ M.lookup endpoint endpoints
 
 -------------------------------------------------------------------------
-
 apiTest :: Token -> RequestParams -> IO SlackResponse
 apiTest token params = request token "api.test" params
 
