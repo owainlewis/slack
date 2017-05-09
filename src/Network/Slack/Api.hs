@@ -88,6 +88,9 @@ import Data.Semigroup ((<>))
 import qualified Network.Slack.Request as Req
 import Network.Slack.Request (Endpoint, Token)
 
+import Data.Aeson.Types(parseMaybe)
+import Data.Aeson(decode, (.:))
+
 type RequestParams = [(String, String)]
 
 packParams :: [(String, String)] -> [(BS.ByteString, BS.ByteString)]
@@ -231,6 +234,16 @@ data SlackResponse
   = Success L.ByteString
   | InvalidEndpoint
   deriving (Show, Eq)
+
+data Slack a = SlackSuccess a
+             | SlackFailure
+
+transformResponse :: Maybe Bool
+transformResponse = do
+    result <- decode "{\"ok\": true}"
+    flip parseMaybe result $ \obj -> do
+      status <- (obj .: "ok")
+      return status
 
 -- Perform a HTTP request to Slack and get a response
 --
