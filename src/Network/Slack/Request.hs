@@ -11,7 +11,6 @@ import Network.HTTP.Simple
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy as LBS
-
 import Data.Semigroup ((<>))
 
 type Endpoint = String

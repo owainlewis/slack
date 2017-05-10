@@ -1,7 +1,7 @@
-module Network.Slack.Type where
+module Network.Slack.Types
+    ( module Network.Slack.Types.User
+    , module Network.Slack.Types.Event
+    ) where
 
-import Data.Aeson
-
-data SlackResponse a = SlackResponse {
-
-} deriving ( Show, Eq )
+import Network.Slack.Types.User
+import Network.Slack.Types.Event
