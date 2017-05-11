@@ -1,2 +1,1 @@
 module Network.Slack where
-
