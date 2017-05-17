@@ -28,14 +28,12 @@ token = "XXX"
 -- List channels
 --
 channels :: IO SlackResponse
-channels = Slack.request token "channels.list" []
+channels = Slack.channelsList token []
 
 -- Create a message in the random chat room
 --
-createExample :: IO SlackResponse
-createExample = Slack.request token "chat.postMessage" params
-    where params = [("channel", "#random"), ("text", "Hi from Haskell")]
-
+createMsgExample :: IO SlackResponse
+createMsgExample = Slack.chatPostMessage token [("channel", "#random"), ("text", "Hi from Haskell")]
 ```
 
 Get information about a request endpoint
