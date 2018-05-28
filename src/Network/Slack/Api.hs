@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# OPTIONS_GHC -fno-warn-name-shadowing -fno-warn-unused-binds -fno-warn-unused-imports #-}
 -- |
 -- Module      : Network.Slack.Api
 --
@@ -76,17 +76,17 @@ module Network.Slack.Api
   , usersSetPresence
   ) where
 
-import Control.Applicative ((<$>))
-import Control.Monad (liftM, liftM2)
-import qualified Data.ByteString as BS
+import           Control.Applicative   ((<$>))
+import           Control.Monad         (liftM, liftM2)
+import qualified Data.ByteString       as BS
 import qualified Data.ByteString.Char8 as C8
-import qualified Data.ByteString.Lazy as L
-import qualified Data.Map as M
-import Data.Maybe (fromMaybe)
-import Data.Semigroup ((<>))
+import qualified Data.ByteString.Lazy  as L
+import qualified Data.Map              as M
+import           Data.Maybe            (fromMaybe)
+import           Data.Semigroup        ((<>))
 
+import           Network.Slack.Request (Endpoint, Token)
 import qualified Network.Slack.Request as Req
-import Network.Slack.Request (Endpoint, Token)
 
 type RequestParams = [(String, String)]
 

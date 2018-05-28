@@ -1,21 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-
+{-# LANGUAGE RecordWildCards   #-}
+{-# OPTIONS_GHC -fno-warn-name-shadowing -fno-warn-unused-binds -fno-warn-unused-imports #-}
 module Main
   ( main
   ) where
 
-import Control.Applicative
-import qualified Data.ByteString.Char8 as B
-import Data.Monoid ((<>))
-import Network.HTTP.Types.URI (parseQuery)
-import qualified Network.Slack.Api as Slack
-import Options.Applicative
+import           Control.Applicative
+import qualified Data.ByteString.Char8  as B
+import           Data.Monoid            ((<>))
+import           Network.HTTP.Types.URI (parseQuery)
+import qualified Network.Slack.Api      as Slack
+import           Options.Applicative
 
 data Options = Options
-  { token :: String
+  { token    :: String
   , endpoint :: String
-  , params :: [(String, String)]
+  , params   :: [(String, String)]
   } deriving (Show, Eq)
 
 parseOptions :: Parser Options
