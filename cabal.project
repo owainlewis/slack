@@ -1,0 +1,6 @@
+packages: .
+
+tests: True
+
+package slack-hs
+  ghc-options: -Werror
