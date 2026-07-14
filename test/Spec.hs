@@ -10,7 +10,11 @@ import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Text (Text)
 import Data.Text.Encoding qualified as Text
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
-import Network.HTTP.Client (brConsume, defaultManagerSettings)
+import Network.HTTP.Client
+  ( HttpException (InvalidUrlException)
+  , brConsume
+  , defaultManagerSettings
+  )
 import Network.HTTP.Types
   ( hAuthorization
   , hAccept
@@ -43,6 +47,7 @@ import Test.Hspec
   , hspec
   , it
   , shouldBe
+  , shouldNotContain
   , shouldSatisfy
   )
 
@@ -117,6 +122,16 @@ spec = do
         client <- mockClient port
         result <- postWebhook client ("http://127.0.0.1:" <> show port <> "/hook") (object ["text" .= ("hello" :: Text)])
         showEither result `shouldBe` "success"
+    it "redacts incoming webhook credentials from transport errors" $ do
+      let failure =
+            TransportError
+              ( InvalidUrlException
+                  "https://hooks.slack.com/services/T123/B456/super-secret?token=also-secret"
+                  "redirected to https://example.com/super-secret"
+              )
+      show failure `shouldBe` "Slack transport error"
+      show failure `shouldNotContain` "super-secret"
+      show failure `shouldNotContain` "also-secret"
 
   describe "external file uploads" $ do
     it "runs get URL, raw upload, and completion in order" $ do

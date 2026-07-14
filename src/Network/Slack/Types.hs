@@ -133,7 +133,7 @@ data SlackError
   | ApiError SlackApiError
 
 instance Show SlackError where
-  show (TransportError exception) = "Slack transport error: " <> show exception
+  show (TransportError _) = "Slack transport error"
   show (HttpError status _) = "Slack HTTP error: " <> show status
   show (RateLimited seconds _) =
     "Slack rate limit exceeded; retry after " <> show seconds <> " seconds"
