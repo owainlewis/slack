@@ -5,6 +5,9 @@ jobs:
     docker:
       - image: haskell:9.10.3
     steps:
+      - run:
+          name: Install checkout tools
+          command: apt-get update && apt-get install -y git openssh-client
       - checkout
       - restore_cache:
           keys:
