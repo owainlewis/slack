@@ -8,7 +8,11 @@ jobs:
       - run:
           name: Install checkout tools
           command: apt-get update && apt-get install -y git openssh-client
-      - checkout
+      - run:
+          name: Checkout
+          command: |
+            git clone --filter=blob:none https://github.com/owainlewis/slack.git .
+            git checkout "$CIRCLE_SHA1"
       - restore_cache:
           keys:
             - cabal-v1-{{ checksum "slack-hs.cabal" }}
