@@ -6,7 +6,7 @@ import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Data.Aeson (Value, eitherDecodeStrict', object, (.=))
 import Data.ByteString qualified as ByteString
 import Data.ByteString.Lazy qualified as LazyByteString
-import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
+import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Text (Text)
 import Data.Text.Encoding qualified as Text
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
@@ -240,6 +240,34 @@ spec = do
       result `shouldBe` Right ()
       takeMVar handled `shouldReturnValue` "e1"
       readIORef messages `shouldReturnValue` []
+    it "opens a replacement before the warned connection closes" $ do
+      attempts <- newIORef (0 :: Int)
+      events <- newIORef ([] :: [Text])
+      allowOldToClose <- newEmptyMVar
+      oldClosed <- newEmptyMVar
+      let runConnection :: IO () -> IO (Either SocketModeError ())
+          runConnection onWarning = do
+            attempt <- atomicModifyIORef' attempts (\value -> let next = value + 1 in (next, next))
+            case attempt of
+              1 -> do
+                modifyIORef' events (<> ["old-open"])
+                onWarning
+                takeMVar allowOldToClose
+                modifyIORef' events (<> ["old-close"])
+                putMVar oldClosed ()
+                pure (Right ())
+              2 -> do
+                modifyIORef' events (<> ["replacement-open"])
+                putMVar allowOldToClose ()
+                takeMVar oldClosed
+                pure (Left (InvalidSocketModeUrl "stop"))
+              _ -> fail "unexpected extra connection"
+      result <- runSocketModeWith (SocketModeConfig 1 1) runConnection
+      case result of
+        Left (InvalidSocketModeUrl "stop") -> pure ()
+        Left failure -> expectationFailure (show failure)
+        Right () -> expectationFailure "Socket Mode unexpectedly succeeded"
+      readIORef events `shouldReturnValue` ["old-open", "replacement-open", "old-close"]
     it "acknowledges before starting follow-up work" $ do
       acknowledged <- newIORef False
       observed <- newEmptyMVar

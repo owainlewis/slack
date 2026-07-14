@@ -48,6 +48,7 @@ library
     Network.Slack.Internal.HTTP
   build-depends:
     aeson                 >= 2.1 && < 2.3,
+    async                 >= 2.2 && < 2.3,
     base                  >= 4.18 && < 5,
     bytestring            >= 0.11 && < 0.13,
     case-insensitive      >= 1.2 && < 1.3,

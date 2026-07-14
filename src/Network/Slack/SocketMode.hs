@@ -11,13 +11,15 @@ module Network.Slack.SocketMode
   , defaultSocketModeConfig
   , decodeSocketMessage
   , consumeSocketMessages
+  , runSocketModeWith
   , socketAcknowledgement
   , dispatchSocketEnvelope
   , runSocketModeOnce
   , runSocketMode
   ) where
 
-import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent (forkIO, newEmptyMVar, takeMVar, threadDelay, tryPutMVar)
+import Control.Concurrent.Async (race, wait, withAsync)
 import Control.Exception
   ( AsyncException
   , SomeException
@@ -137,7 +139,15 @@ runSocketModeOnce
   -> Token
   -> (SocketEnvelope -> SocketHandlerResult)
   -> IO (Either SocketModeError ())
-runSocketModeOnce client appToken handler = do
+runSocketModeOnce = runSocketModeOnceWithWarning (pure ())
+
+runSocketModeOnceWithWarning
+  :: IO ()
+  -> Client
+  -> Token
+  -> (SocketEnvelope -> SocketHandlerResult)
+  -> IO (Either SocketModeError ())
+runSocketModeOnceWithWarning onWarning client appToken handler = do
   opened <- callJSON client appToken openConnectionMethod (object [])
   case opened of
     Left failure -> pure (Left (SocketModeApiError failure))
@@ -146,7 +156,7 @@ runSocketModeOnce client appToken handler = do
     connect url = case socketLocation url of
       Left failure -> pure (Left failure)
       Right (host, port, path) -> do
-        result <- trySynchronous (runSecureClient host (fromIntegral port) path (consume handler))
+        result <- trySynchronous (runSecureClient host (fromIntegral port) path (consume onWarning handler))
         pure $ case result of
           Left exception -> Left (SocketModeConnectionError (Text.pack (displayException exception)))
           Right (Left message) -> Left (SocketModeProtocolError message)
@@ -163,12 +173,34 @@ runSocketMode
   -> (SocketEnvelope -> SocketHandlerResult)
   -> IO (Either SocketModeError ())
 runSocketMode config client appToken handler =
+  runSocketModeWith config (\onWarning -> runSocketModeOnceWithWarning onWarning client appToken handler)
+
+-- | Maintain overlapping connections using a supplied connection action.
+--
+-- The action must call its callback when Slack sends a warning disconnect.
+runSocketModeWith
+  :: SocketModeConfig
+  -> ((IO () -> IO (Either SocketModeError ())))
+  -> IO (Either SocketModeError ())
+runSocketModeWith config runConnection =
   loop initialDelay
   where
     initialDelay = max 1 (socketModeInitialReconnectDelayMicroseconds config)
     maximumDelay = max initialDelay (socketModeMaximumReconnectDelayMicroseconds config)
     loop delay = do
-      result <- runSocketModeOnce client appToken handler
+      warning <- newEmptyMVar
+      withAsync (runConnection (tryPutMVar warning () >> pure ())) $ \current -> do
+        outcome <- race (wait current) (takeMVar warning)
+        case outcome of
+          Left result -> handleResult delay result
+          Right () -> overlap current
+    overlap current =
+      withAsync (loop initialDelay) $ \replacement -> do
+        outcome <- race (wait current) (wait replacement)
+        case outcome of
+          Left _ -> wait replacement
+          Right result -> pure result
+    handleResult delay result =
       case result of
         Left (SocketModeApiError (RateLimited seconds _)) -> do
           threadDelay (max 0 seconds * 1000000)
@@ -185,9 +217,9 @@ runSocketMode config client appToken handler =
       threadDelay jitteredDelay
       loop (delay + min delay (maximumDelay - delay))
 
-consume :: (SocketEnvelope -> SocketHandlerResult) -> Connection -> IO (Either Text ())
-consume handler connection =
-  consumeSocketMessages (receiveData connection) (sendTextData connection . encode) handler
+consume :: IO () -> (SocketEnvelope -> SocketHandlerResult) -> Connection -> IO (Either Text ())
+consume onWarning handler connection =
+  consumeSocketMessagesWithWarning onWarning (receiveData connection) (sendTextData connection . encode) handler
 
 -- | Consume decoded messages until Slack requests an actual disconnect.
 consumeSocketMessages
@@ -195,14 +227,22 @@ consumeSocketMessages
   -> (Value -> IO ())
   -> (SocketEnvelope -> SocketHandlerResult)
   -> IO (Either Text ())
-consumeSocketMessages receiveMessage sendAcknowledgement handler = go
+consumeSocketMessages = consumeSocketMessagesWithWarning (pure ())
+
+consumeSocketMessagesWithWarning
+  :: IO ()
+  -> IO ByteString
+  -> (Value -> IO ())
+  -> (SocketEnvelope -> SocketHandlerResult)
+  -> IO (Either Text ())
+consumeSocketMessagesWithWarning onWarning receiveMessage sendAcknowledgement handler = go
   where
     go = do
       rawMessage <- receiveMessage
       case decodeSocketMessage rawMessage of
         Left message -> pure (Left (Text.pack message))
         Right SocketHello -> go
-        Right SocketDisconnectWarning -> go
+        Right SocketDisconnectWarning -> onWarning >> go
         Right SocketDisconnect -> pure (Right ())
         Right (SocketPayload envelope) -> do
           dispatchSocketEnvelope sendAcknowledgement handler envelope
