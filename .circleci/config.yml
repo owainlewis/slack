@@ -1,0 +1,34 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: haskell:9.10.3
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cabal-v1-{{ checksum "slack-hs.cabal" }}
+            - cabal-v1-
+      - run:
+          name: Update package index
+          command: cabal update
+      - run:
+          name: Build
+          command: cabal build all
+      - run:
+          name: Test
+          command: cabal test all --test-show-details=direct
+      - run:
+          name: Haddock
+          command: cabal haddock all
+      - save_cache:
+          key: cabal-v1-{{ checksum "slack-hs.cabal" }}
+          paths:
+            - ~/.cabal/packages
+            - ~/.cabal/store
+
+workflows:
+  test:
+    jobs:
+      - test
