@@ -69,6 +69,8 @@ executable slack-api
   import: warnings
   hs-source-dirs: app
   main-is: Main.hs
+  other-modules:
+    Network.Slack.CLI.Options
   build-depends:
     aeson                 >= 2.1 && < 2.3,
     base                  >= 4.18 && < 5,
@@ -80,8 +82,12 @@ executable slack-api
 test-suite slack-hs-test
   import: warnings
   type: exitcode-stdio-1.0
-  hs-source-dirs: test
+  hs-source-dirs:
+    test
+    app
   main-is: Spec.hs
+  other-modules:
+    Network.Slack.CLI.Options
   ghc-options: -threaded
   build-depends:
     aeson       >= 2.1 && < 2.3,
@@ -91,6 +97,7 @@ test-suite slack-hs-test
     http-client >= 0.7 && < 0.8,
     http-types  >= 0.12 && < 0.13,
     slack-hs,
+    optparse-applicative >= 0.18 && < 0.20,
     text        >= 2.0 && < 2.2,
     time        >= 1.12 && < 1.15,
     wai         >= 3.2 && < 3.3,

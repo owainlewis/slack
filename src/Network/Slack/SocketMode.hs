@@ -10,6 +10,7 @@ module Network.Slack.SocketMode
   , SocketModeConfig (..)
   , defaultSocketModeConfig
   , decodeSocketMessage
+  , consumeSocketMessages
   , socketAcknowledgement
   , dispatchSocketEnvelope
   , runSocketModeOnce
@@ -185,16 +186,26 @@ runSocketMode config client appToken handler =
       loop (delay + min delay (maximumDelay - delay))
 
 consume :: (SocketEnvelope -> SocketHandlerResult) -> Connection -> IO (Either Text ())
-consume handler connection = go
+consume handler connection =
+  consumeSocketMessages (receiveData connection) (sendTextData connection . encode) handler
+
+-- | Consume decoded messages until Slack requests an actual disconnect.
+consumeSocketMessages
+  :: IO ByteString
+  -> (Value -> IO ())
+  -> (SocketEnvelope -> SocketHandlerResult)
+  -> IO (Either Text ())
+consumeSocketMessages receiveMessage sendAcknowledgement handler = go
   where
     go = do
-      rawMessage <- receiveData connection
+      rawMessage <- receiveMessage
       case decodeSocketMessage rawMessage of
         Left message -> pure (Left (Text.pack message))
         Right SocketHello -> go
+        Right SocketDisconnectWarning -> go
         Right SocketDisconnect -> pure (Right ())
         Right (SocketPayload envelope) -> do
-          dispatchSocketEnvelope (sendTextData connection . encode) handler envelope
+          dispatchSocketEnvelope sendAcknowledgement handler envelope
           go
 
 -- | Send an acknowledgement before starting the handler's follow-up work.
@@ -212,6 +223,7 @@ dispatchSocketEnvelope sendAcknowledgement handler envelope = do
 -- | Control message or delivered payload received from Slack.
 data SocketMessage
   = SocketHello
+  | SocketDisconnectWarning
   | SocketDisconnect
   | SocketPayload SocketEnvelope
   deriving stock (Eq, Show)
@@ -223,7 +235,9 @@ parseSocketMessage value = parseEither parser value
       messageType <- objectValue .: "type" :: Parser Text
       case messageType of
         "hello" -> pure SocketHello
-        "disconnect" -> pure SocketDisconnect
+        "disconnect" -> do
+          reason <- objectValue .:? "reason"
+          pure $ if reason == Just ("warning" :: Text) then SocketDisconnectWarning else SocketDisconnect
         _ -> SocketPayload <$> parseJSON value
 
 socketLocation :: String -> Either SocketModeError (String, Int, String)

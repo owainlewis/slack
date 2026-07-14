@@ -4,26 +4,15 @@ module Main (main) where
 
 import Control.Applicative ((<|>))
 import Data.Aeson (Value, eitherDecodeStrict', encode)
-import Data.ByteString.Char8 qualified as ByteString
 import Data.ByteString.Lazy.Char8 qualified as LazyByteString
-import Data.Text (Text)
 import Data.Text qualified as Text
 import Options.Applicative
-  ( Parser
-  , argument
-  , execParser
+  ( execParser
   , fullDesc
   , header
-  , help
   , helper
   , info
-  , long
-  , metavar
-  , option
-  , optional
   , progDesc
-  , str
-  , strOption
   )
 import System.Environment (lookupEnv)
 
@@ -35,19 +24,10 @@ import Network.Slack
   , newClient
   , token
   )
-
-data Options = Options
-  { optionToken :: Maybe Text
-  , optionMethod :: Text
-  , optionBody :: ByteString.ByteString
-  }
-
-optionsParser :: Parser Options
-optionsParser =
-  Options
-    <$> optional (strOption (long "token" <> metavar "TOKEN" <> help "Slack token; prefer SLACK_TOKEN"))
-    <*> argument str (metavar "METHOD" <> help "Web API method, for example conversations.list")
-    <*> option (ByteString.pack <$> str) (long "json" <> metavar "JSON" <> help "JSON request object")
+import Network.Slack.CLI.Options
+  ( Options (optionBody, optionMethod, optionToken)
+  , optionsParser
+  )
 
 main :: IO ()
 main = do

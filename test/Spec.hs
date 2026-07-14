@@ -3,7 +3,7 @@
 module Main (main) where
 
 import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
-import Data.Aeson (Value, object, (.=))
+import Data.Aeson (Value, eitherDecodeStrict', object, (.=))
 import Data.ByteString qualified as ByteString
 import Data.ByteString.Lazy qualified as LazyByteString
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
@@ -29,6 +29,13 @@ import Network.Wai
   , strictRequestBody
   )
 import Network.Wai.Handler.Warp (testWithApplication)
+import Options.Applicative
+  ( ParserResult (CompletionInvoked, Failure, Success)
+  , defaultPrefs
+  , execParserPure
+  , fullDesc
+  , info
+  )
 import Test.Hspec
   ( Spec
   , describe
@@ -40,12 +47,22 @@ import Test.Hspec
   )
 
 import Network.Slack
+import Network.Slack.CLI.Options (Options (optionBody), optionsParser)
 
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
 spec = do
+  describe "CLI" $ do
+    it "preserves non-ASCII JSON as UTF-8" $ do
+      case execParserPure defaultPrefs (info optionsParser fullDesc) ["chat.postMessage", "--json", "{\"text\":\"Hello 👋 世界\"}"] of
+        Success options ->
+          eitherDecodeStrict' (optionBody options)
+            `shouldBe` Right (object ["text" .= ("Hello 👋 世界" :: Text)])
+        Failure _ -> expectationFailure "CLI options unexpectedly failed to parse"
+        CompletionInvoked _ -> expectationFailure "CLI options unexpectedly requested completion"
+
   describe "credentials" $ do
     it "redacts tokens and signing secrets" $ do
       show (token "xoxb-secret") `shouldBe` "<Slack token>"
@@ -187,9 +204,27 @@ spec = do
         `shouldBe` object ["envelope_id" .= ("env-1" :: Text)]
     it "decodes control messages and delivered envelopes" $ do
       decodeSocketMessage "{\"type\":\"hello\"}" `shouldBe` Right SocketHello
+      decodeSocketMessage "{\"type\":\"disconnect\",\"reason\":\"warning\"}" `shouldBe` Right SocketDisconnectWarning
       decodeSocketMessage "{\"type\":\"disconnect\",\"reason\":\"refresh_requested\"}" `shouldBe` Right SocketDisconnect
       decodeSocketMessage "{\"type\":\"events_api\",\"envelope_id\":\"e1\",\"payload\":{},\"accepts_response_payload\":false}"
         `shouldBe` Right (SocketPayload (SocketEnvelope "e1" "events_api" (object []) False))
+    it "keeps consuming after warning disconnects" $ do
+      messages <- newIORef
+        [ "{\"type\":\"disconnect\",\"reason\":\"warning\"}"
+        , "{\"type\":\"events_api\",\"envelope_id\":\"e1\",\"payload\":{},\"accepts_response_payload\":false}"
+        , "{\"type\":\"disconnect\",\"reason\":\"refresh_requested\"}"
+        ]
+      handled <- newEmptyMVar
+      let receiveMessage = do
+            remaining <- readIORef messages
+            case remaining of
+              next : rest -> writeIORef messages rest >> pure next
+              [] -> fail "consumer read past terminal disconnect"
+          handler envelope = SocketHandlerResult Nothing (putMVar handled (socketEnvelopeId envelope))
+      result <- consumeSocketMessages receiveMessage (const (pure ())) handler
+      result `shouldBe` Right ()
+      takeMVar handled `shouldReturnValue` "e1"
+      readIORef messages `shouldReturnValue` []
     it "acknowledges before starting follow-up work" $ do
       acknowledged <- newIORef False
       observed <- newEmptyMVar
